@@ -8,45 +8,83 @@ import (
 	"time"
 )
 
-func (pump *Station) ProcessCarArrival(car *Car) {
-	if len(pump.ServicePlace) < pump.Pump_count {
-		pump.serveCar(car)
+func (sta *Station) ProcessCarArrival(car *Car, completionChannel chan bool) {
+	if len(sta.ServicePlace) < sta.Pump_count {
+		// Add car to service place or queue (depending on your logic)
+		sta.ServicePlace = append(sta.ServicePlace, car)
+		go func() {
+			sta.serveCar(car, completionChannel) // Serve car in a separate goroutine
+		}()
 	} else {
-		pump.AddCarToQueue(car)
+		car.Queued = true
+		fmt.Printf("%d je ve frontě \n", car.ID)
+		sta.AddCarToQueue(car)
 	}
 }
 
 func GetPumpForCar(car *Car, pumps []*Station) *Station {
-	for _, pump := range pumps {
-		if pump.Pump_type == car.Car_type {
-			return pump
+	for _, station := range pumps {
+		if station.Pump_type == car.Car_type {
+			return station
 		}
 	}
 	return nil
 }
 
-func (pump *Station) AddCarToQueue(car *Car) {
-	pump.WaitQueue = append(pump.WaitQueue, car)
-}
-func (pump *Station) RemoveCarFromQueue(car *Car) {
-	id := car.ID
-	pump.WaitQueue = append(pump.WaitQueue[:id], pump.WaitQueue[id+1:]...)
+func (sta *Station) AddCarToQueue(car *Car) {
+	sta.WaitQueue = append(sta.WaitQueue, car)
 }
 
-func (pump *Station) serveCar(car *Car) {
+//	func (sta *Station) RemoveCarFromQueue(car *Car) {
+//		sta.Mutex.Lock()
+//		sta.WaitQueue = sta.WaitQueue[1:]
+//		sta.Mutex.Unlock()
+//	}
+func RemoveIndex(queue []*Car, carID int) []*Car {
+	ret := make([]*Car, 0)
+	for index, car := range queue {
+		if carID == car.ID {
+			ret = append(ret, queue[:index]...)
+			return append(ret, queue[index+1:]...)
+		}
+
+	}
+	fmt.Printf("Auto %d nenalezeno.\n", carID)
+	return nil
+
+}
+
+func (sta *Station) serveCar(car *Car, completionChannel chan bool) {
+	queueTime := time.Duration(0)
 	// Simulace obsluhy auta
-	fmt.Printf("Auto %d tankuje na stanici typu %s\n", car.ID, pump.Pump_type)
-	pump.ServicePlace = append(pump.ServicePlace, car)
-	serveTime := pump.randomServeTime()
+	fmt.Printf("Auto %d tankuje na stanici typu %s\n", car.ID, sta.Pump_type) //Cestovat časem do přítomnosti.
+	// fmt.Println(car.Arrival_time, time.Since(time.Unix(0, int64(car.Arrival_time)*int64(time.Millisecond))))
+	now := time.Now()
+	if car.Queued {
+		queueTime = now.Sub(car.Arrival_time)
+	}
+	sta.TotalQueueTime += queueTime
+	serveTime := sta.randomServeTime()
 	time.Sleep(time.Millisecond * time.Duration(serveTime))
-	pump.ServicePlace = append(pump.ServicePlace[:car.ID], pump.ServicePlace[car.ID+1:]...)
-	fmt.Printf("Auto %d bylo obslouženo na stanici typu %s\n", car.ID, pump.Pump_type)
+	sta.CarsServed++
+	sta.queueMutex.Lock() // Acquire sta's queue mutex
+	sta.ServicePlace = RemoveIndex(sta.ServicePlace, car.ID)
+	sta.queueMutex.Unlock()
+	completionChannel <- true
+	fmt.Printf("Auto %d bylo obslouženo na stanici typu %s\n", car.ID, sta.Pump_type)
+
+	if len(sta.WaitQueue) > 0 {
+		carFromQueue := sta.WaitQueue[0]
+		fmt.Printf("%d je ve frontě \n", sta.WaitQueue[0].ID)
+		sta.WaitQueue = sta.WaitQueue[1:]             // Odeber první auto z fronty
+		sta.serveCar(carFromQueue, completionChannel) // Obsluhuj první auto z fronty
+	}
 }
 
-func (pump *Station) randomServeTime() int {
+func (sta *Station) randomServeTime() int {
 	source := rand.NewSource(time.Now().UnixNano())
 	generator := rand.New(source)
-	return generator.Intn(pump.Serve_time_max-pump.Serve_time_min+1) + pump.Serve_time_min
+	return generator.Intn(sta.Serve_time_max-sta.Serve_time_min+1) + sta.Serve_time_min
 }
 
 // type CarQueue []Car

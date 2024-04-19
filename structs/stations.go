@@ -2,6 +2,7 @@
 package structs
 
 import (
+	"sync"
 	"time"
 )
 
@@ -14,6 +15,7 @@ type Station struct {
 	WaitQueue      []*Car
 	CarsServed     int
 	TotalQueueTime time.Duration
+	queueMutex     sync.Mutex
 }
 
 // Function to create a new Station
@@ -23,7 +25,7 @@ func NewStation(serveTimeMin, serveTimeMax int, pumpType string, pumpCount int) 
 		Serve_time_max: serveTimeMax,
 		Pump_type:      pumpType,
 		Pump_count:     pumpCount,
-		ServicePlace:   make([]*Car, pumpCount),
+		ServicePlace:   make([]*Car, 0),
 		WaitQueue:      make([]*Car, 0),
 		CarsServed:     0,
 		TotalQueueTime: 0,

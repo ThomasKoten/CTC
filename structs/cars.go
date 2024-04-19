@@ -2,23 +2,27 @@ package structs
 
 import (
 	"math/rand"
+	"time"
 )
 
 type Car struct {
-	ID           int
-	Arrival_time int
-	Car_type     string
+	ID            int
+	Arrival_delay int
+	Arrival_time  time.Time
+	Car_type      string
+	Queued        bool
 }
 
 func randomCarType() string {
 	var CAR_TYPES = [3]string{"gas", "lpg", "electro"}
 	return CAR_TYPES[rand.Intn(3)]
 }
-func NewCar(arrivalTime, id int) *Car {
+func NewCar(delay, id int) *Car {
 	return &Car{
-		ID:           id,
-		Arrival_time: arrivalTime,
-		Car_type:     randomCarType(),
+		ID:            id,
+		Arrival_delay: delay,
+		Car_type:      "gas",
+		Queued:        false,
 	}
 }
 
