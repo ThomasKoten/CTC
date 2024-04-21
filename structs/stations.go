@@ -1,57 +1,47 @@
 // station.go
-package structs
+package main
 
 import (
 	"sync"
-	"time"
+)
+
+type FuelType int
+
+const (
+	Gas FuelType = iota
+	LPG
+	Electric
+	Diesel
 )
 
 type Station struct {
 	Serve_time_min int
 	Serve_time_max int
-	Pump_type      string
-	Pump_count     int
-	ServicePlace   []*Car
-	WaitQueue      []*Car
-	CarsServed     int
-	TotalQueueTime time.Duration
-	queueMutex     sync.Mutex
+	Pump_type      FuelType
+	// Pump_count     int
+	// ServicePlace   []*Car
+	WaitQueue  chan Car
+	queueMutex sync.Mutex
+}
+
+type GasStation struct {
+	Pumps map[FuelType][]*Station
 }
 
 // Function to create a new Station
-func NewStation(serveTimeMin, serveTimeMax int, pumpType string, pumpCount int) *Station {
+func NewStation(serveTimeMin, serveTimeMax int, fuelType FuelType, maxQueueLength int) *Station {
 	return &Station{
 		Serve_time_min: serveTimeMin,
 		Serve_time_max: serveTimeMax,
-		Pump_type:      pumpType,
-		Pump_count:     pumpCount,
-		ServicePlace:   make([]*Car, 0),
-		WaitQueue:      make([]*Car, 0),
-		CarsServed:     0,
-		TotalQueueTime: 0,
+		Pump_type:      fuelType,
+		WaitQueue:      make(chan Car, maxQueueLength),
 	}
 }
 
-// type Station struct {
-// 	Serve_time_min int
-// 	Serve_time_max int
-// 	Station_type   string
-// 	Station_queue  []CarQueue
-// 	QueueTime      time.Duration
-// 	CarsServed     int
-// 	Big            time.Duration
-// }
-
-// // Function to create a new Station
-// func NewStation(serveTimeMin, serveTimeMax int, stationType string, queue []CarQueue) *Station {
-// 	return &Station{
-// 		Serve_time_min: serveTimeMin,
-// 		Serve_time_max: serveTimeMax,
-// 		Station_type:   stationType,
-// 		Station_queue:  queue,
-// 		CarsServed:     1,
-// 		Big:            0,
-// 	}
-// }
-
-//Funkce vygeneruje auto, pošle ho natankovat nebo do fronty, pošle ho na kasu/frontu, uvolní thread
+func (gs *GasStation) BuildStation(pumpType FuelType, nPumps, minTime, maxTime, maxQueue int, wg *sync.WaitGroup) {
+	gs.Pumps[pumpType] = make([]*Station, nPumps)
+	for i := 0; i < nPumps; i++ {
+		gs.Pumps[pumpType][i] = NewStation(minTime, maxTime, pumpType, maxQueue)
+		go gs.Pumps[pumpType][i].fillUpAndLeave()
+	}
+}
