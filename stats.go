@@ -11,33 +11,39 @@ var globalStats Stats
 // CarsServed => total count of cars getting serviced at the station
 // TotalServiceTime => time car spent waiting in the queue + time spent refueling/paying + time spent waiting to get to another queue
 // TotalQueueTime => total time all cars spent waiting in the queue
+// AverageTime => average time cars spent waiting in the queue
 type Stats struct {
 	Pumps struct {
 		Gas struct {
 			CarsServed       int
 			TotalServiceTime time.Duration
 			TotalQueueTime   time.Duration
+			AverageTime      time.Duration
 		}
 		LPG struct {
 			CarsServed       int
 			TotalServiceTime time.Duration
 			TotalQueueTime   time.Duration
+			AverageTime      time.Duration
 		}
 		Electric struct {
 			CarsServed       int
 			TotalServiceTime time.Duration
 			TotalQueueTime   time.Duration
+			AverageTime      time.Duration
 		}
 		Diesel struct {
 			CarsServed       int
 			TotalServiceTime time.Duration
 			TotalQueueTime   time.Duration
+			AverageTime      time.Duration
 		}
 	}
 	Registers struct {
 		CarsServed       int
 		TotalServiceTime time.Duration
 		TotalQueueTime   time.Duration
+		AverageTime      time.Duration
 	}
 }
 
@@ -82,5 +88,30 @@ func updateStats(car Car) {
 	globalStats.Registers.CarsServed++
 	globalStats.Registers.TotalQueueTime += timeInRegisterQueue
 	globalStats.Registers.TotalServiceTime += timeOnRegister
+
 	globalWG.Done()
+}
+
+// Reckon all the remaining stats
+func finalizeStats() {
+
+	if globalStats.Pumps.Gas.CarsServed > 0 {
+		globalStats.Pumps.Gas.AverageTime = (globalStats.Pumps.Gas.TotalQueueTime / time.Duration(globalStats.Pumps.Gas.CarsServed))
+	}
+
+	if globalStats.Pumps.LPG.CarsServed > 0 {
+		globalStats.Pumps.LPG.AverageTime = (globalStats.Pumps.LPG.TotalQueueTime / time.Duration(globalStats.Pumps.LPG.CarsServed))
+	}
+
+	if globalStats.Pumps.Electric.CarsServed > 0 {
+		globalStats.Pumps.Electric.AverageTime = (globalStats.Pumps.Electric.TotalQueueTime / time.Duration(globalStats.Pumps.Electric.CarsServed))
+	}
+
+	if globalStats.Pumps.Diesel.CarsServed > 0 {
+		globalStats.Pumps.Diesel.AverageTime = (globalStats.Pumps.Diesel.TotalQueueTime / time.Duration(globalStats.Pumps.Diesel.CarsServed))
+	}
+
+	if globalStats.Registers.CarsServed > 0 {
+		globalStats.Registers.AverageTime = globalStats.Registers.TotalQueueTime / time.Duration(globalStats.Registers.CarsServed)
+	}
 }

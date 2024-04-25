@@ -37,6 +37,9 @@ func main() {
 
 	// Wait for all cars to leave and the process of stats evaluation
 	globalWG.Wait()
+
+	finalizeStats()
+
 	toPrint := fmt.Sprintf("%+v\n", globalStats)
 	toPrint = strings.Replace(toPrint, " ", "\n", -1)
 	toPrint = strings.Replace(toPrint, ":{", ":{\n", -1)
