@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 )
@@ -35,11 +34,6 @@ func main() {
 	globalWG.Wait()
 
 	finalizeStats()
-
-	toPrint := fmt.Sprintf("%+v\n", globalStats)
-	toPrint = strings.Replace(toPrint, " ", "\n", -1)
-	toPrint = strings.Replace(toPrint, ":{", ":{\n", -1)
-	toPrint = strings.Replace(toPrint, "}", "}\n", -1)
-	fmt.Println(toPrint)
-	fmt.Print(time.Since(start))
+	printStats()
+	fmt.Print("Total elapsed time: ", time.Since(start))
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -114,4 +115,39 @@ func finalizeStats() {
 	if globalStats.Registers.CarsServed > 0 {
 		globalStats.Registers.AverageTime = globalStats.Registers.TotalQueueTime / time.Duration(globalStats.Registers.CarsServed)
 	}
+}
+
+// Prints formated stats output
+func printStats() {
+	fmt.Println("Pumps:")
+	printPumpStats("Gas")
+	printPumpStats("LPG")
+	printPumpStats("Electric")
+	printPumpStats("Diesel")
+
+	fmt.Println("\nRegisters:")
+	fmt.Printf("\tCars Served: %d\n", globalStats.Registers.CarsServed)
+	fmt.Printf("\tTotal Service Time: %s\n", globalStats.Registers.TotalServiceTime)
+	fmt.Printf("\tTotal Queue Time: %s\n", globalStats.Registers.TotalQueueTime)
+	fmt.Printf("\tAverage Time: %s\n", globalStats.Registers.AverageTime)
+}
+
+// Function for uniform pinting of pump stats
+func printPumpStats(pumpType string) {
+	pump := globalStats.Pumps.Gas
+	fmt.Printf("%s:\n", pumpType)
+	switch pumpType {
+	case "Gas":
+		pump = globalStats.Pumps.Gas
+	case "LPG":
+		pump = globalStats.Pumps.LPG
+	case "Electric":
+		pump = globalStats.Pumps.Electric
+	case "Diesel":
+		pump = globalStats.Pumps.Diesel
+	}
+	fmt.Printf("\tCars Served: %d\n", pump.CarsServed)
+	fmt.Printf("\tTotal Service Time: %s\n", pump.TotalServiceTime)
+	fmt.Printf("\tTotal Queue Time: %s\n", pump.TotalQueueTime)
+	fmt.Printf("\tAverage Time: %s\n", pump.AverageTime)
 }
