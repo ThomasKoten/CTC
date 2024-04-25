@@ -13,7 +13,7 @@ type Stats struct {
 		CarsServed     int
 		TotalQueueTime time.Duration
 	}
-	Station struct {
+	Pumps struct {
 		Gas struct {
 			CarsServed       int
 			TotalServiceTime time.Duration
@@ -35,6 +35,11 @@ type Stats struct {
 			TotalQueueTime   time.Duration
 		}
 	}
+	Registers struct {
+		CarsServed       int
+		TotalServiceTime time.Duration
+		TotalQueueTime   time.Duration
+	}
 }
 
 func updateStats(car Car) {
@@ -43,7 +48,9 @@ func updateStats(car Car) {
 	timeAtEntrance := car.QueueUpForPump.Sub(car.ArrivalTime)
 	// fmt.Println(timeAtEntrance.Milliseconds())
 	timeInPumpQueue := car.RefuelTime.Sub(car.QueueUpForPump)
-	timeOnPump := car.ExitTime.Sub(car.QueueUpForPump)
+	timeOnPump := car.QueueUpForRegister.Sub(car.QueueUpForPump)
+	timeInRegisterQueue := car.PayTime.Sub(car.QueueUpForRegister)
+	timeOnRegister := car.ExitTime.Sub(car.QueueUpForRegister)
 
 	globalStatsLock.Lock()
 	globalStats.SharedQueue.CarsServed++
@@ -51,21 +58,24 @@ func updateStats(car Car) {
 
 	switch car.CarType {
 	case Gas:
-		globalStats.Station.Gas.CarsServed++
-		globalStats.Station.Gas.TotalQueueTime += timeInPumpQueue
-		globalStats.Station.Gas.TotalServiceTime += timeOnPump
+		globalStats.Pumps.Gas.CarsServed++
+		globalStats.Pumps.Gas.TotalQueueTime += timeInPumpQueue
+		globalStats.Pumps.Gas.TotalServiceTime += timeOnPump
 	case LPG:
-		globalStats.Station.LPG.CarsServed++
-		globalStats.Station.LPG.TotalQueueTime += timeInPumpQueue
-		globalStats.Station.LPG.TotalServiceTime += timeOnPump
+		globalStats.Pumps.LPG.CarsServed++
+		globalStats.Pumps.LPG.TotalQueueTime += timeInPumpQueue
+		globalStats.Pumps.LPG.TotalServiceTime += timeOnPump
 	case Electric:
-		globalStats.Station.Electric.CarsServed++
-		globalStats.Station.Electric.TotalQueueTime += timeInPumpQueue
-		globalStats.Station.Electric.TotalServiceTime += timeOnPump
+		globalStats.Pumps.Electric.CarsServed++
+		globalStats.Pumps.Electric.TotalQueueTime += timeInPumpQueue
+		globalStats.Pumps.Electric.TotalServiceTime += timeOnPump
 	case Diesel:
-		globalStats.Station.Diesel.CarsServed++
-		globalStats.Station.Diesel.TotalQueueTime += timeInPumpQueue
-		globalStats.Station.Diesel.TotalServiceTime += timeOnPump
+		globalStats.Pumps.Diesel.CarsServed++
+		globalStats.Pumps.Diesel.TotalQueueTime += timeInPumpQueue
+		globalStats.Pumps.Diesel.TotalServiceTime += timeOnPump
 	}
+	globalStats.Registers.CarsServed++
+	globalStats.Registers.TotalQueueTime += timeInRegisterQueue
+	globalStats.Registers.TotalServiceTime += timeOnRegister
 	globalWG.Done()
 }

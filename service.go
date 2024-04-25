@@ -3,60 +3,74 @@ package main
 //Auto přijede začne tankovat určitou dobu nebo si stoupne do fronty/čeká
 //Dokud je někdo v určité frontě bude se přičítat čas
 import (
-	"fmt"
 	"math/rand"
+	"sync"
 	"time"
 )
 
+var serviceLock sync.Mutex
+
 func (s *Station) Serve(car *Car) {
-	defer s.queueMutex.Unlock()
-	servedTime := time.Duration(GetRandomDuration(s.Serve_time_min, s.Serve_time_max))
-	time.Sleep(servedTime * time.Millisecond)
-	s.queueMutex.Lock()
+	// defer s.queueMutex.Unlock()
+	randomCarType()
+	servedTime := GetRandomDurationMS(s.Serve_time_min, s.Serve_time_max)
+	time.Sleep(servedTime)
+	// s.queueMutex.Lock()
 }
 
-func FindShortQueue(pumps []*Station) int {
-	bestPump := 0
-	shortestQueue := len(pumps[0].WaitQueue)
-	for id := 1; id < len(pumps); id++ {
-		tempQueue := len(pumps[id].WaitQueue)
-		fmt.Println(tempQueue)
+func FindShortQueue(stations []*Station) int {
+	bestStation := 0
+	shortestQueue := len(stations[0].WaitQueue)
+	if stations[0].Occupied {
+		shortestQueue++
+	}
+	for id := 1; id < len(stations); id++ {
+		tempQueue := len(stations[id].WaitQueue)
+		if stations[id].Occupied {
+			tempQueue++
+		}
 		if tempQueue < shortestQueue {
 			shortestQueue = tempQueue
-			bestPump = id
+			bestStation = id
 		}
 	}
-
-	return bestPump
+	return bestStation
 }
 
-func RemoveIndex(queue []*Car, carID int) []*Car {
-	ret := make([]*Car, 0)
-	for index, car := range queue {
-		if carID == car.ID {
-			ret = append(ret, queue[:index]...)
-			return append(ret, queue[index+1:]...)
-		}
-
-	}
-	fmt.Printf("Auto %d nenalezeno.\n", carID)
-	return nil
-
-}
-
-func (sta *Station) fillUpAndLeave() {
+func (sta *Station) fillUpAndGoPay(registers []*Station) {
 	for {
 		car := <-sta.WaitQueue
 		car.RefuelTime = time.Now()
-		// fmt.Printf("Auto %d tankuje na stanici typu %d. Čekal %s\n", car.ID, sta.Pump_type, car.RefuelTime)
+		sta.Occupied = true
+		// fmt.Printf("Auto %d tankuje na stanici typu %d. Čekal %s\n", car.ID, sta.Type, car.QueueUpForRegister.Sub(car.RefuelTime))
 		sta.Serve(&car)
-		car.ExitTime = time.Now()
-		go updateStats(car)
+		serviceLock.Lock()
+		queueIndex := FindShortQueue(registers)
+		// fmt.Println(queueIndex, len(registers[queueIndex].WaitQueue))
+		serviceLock.Unlock()
+		car.QueueUpForRegister = time.Now()
+		registers[queueIndex].WaitQueue <- car
+		sta.Occupied = false
 		// fmt.Printf("Auto %d bylo obslouženo na stanici typu %d\n", car.ID, sta.Pump_type)
 
 	}
 }
 
-func GetRandomDuration(min, max int) int {
-	return (rand.Intn((max+1)-min) + min)
+func (station *Station) payAndLeave() {
+	for {
+		car := <-station.WaitQueue //Occupied and stuff
+		station.Occupied = true
+		car.PayTime = time.Now()
+		payingTime := GetRandomDurationMS(station.Serve_time_min, station.Serve_time_max)
+		// fmt.Printf("Car %d about to pay at reg quue %d\n", car.ID, len(station.WaitQueue))
+		time.Sleep(payingTime)
+		car.ExitTime = time.Now()
+		go updateStats(car)
+		station.Occupied = false
+
+	}
+}
+
+func GetRandomDurationMS(min, max int) time.Duration {
+	return time.Duration(rand.Intn(max+1-min)+min) * time.Millisecond
 }

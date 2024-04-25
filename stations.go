@@ -1,14 +1,7 @@
-// station.go
 package main
 
-import (
-	"sync"
-)
-
-type FuelType int
-
 const (
-	Gas FuelType = iota
+	Gas = iota
 	LPG
 	Electric
 	Diesel
@@ -17,31 +10,51 @@ const (
 type Station struct {
 	Serve_time_min int
 	Serve_time_max int
-	Pump_type      FuelType
+	Type           int
 	// Pump_count     int
 	// ServicePlace   []*Car
-	WaitQueue  chan Car
-	queueMutex sync.Mutex
+	WaitQueue chan Car
+	Occupied  bool
 }
 
 type GasStation struct {
-	Pumps map[FuelType][]*Station
+	Pumps     map[int][]*Station
+	Registers []*Station
 }
 
 // Function to create a new Station
-func NewStation(serveTimeMin, serveTimeMax int, fuelType FuelType, maxQueueLength int) *Station {
+func NewPump(serveTimeMin, serveTimeMax int, fuelType int, maxQueueLength int) *Station {
 	return &Station{
 		Serve_time_min: serveTimeMin,
 		Serve_time_max: serveTimeMax,
-		Pump_type:      fuelType,
+		Type:           fuelType,
 		WaitQueue:      make(chan Car, maxQueueLength),
+		Occupied:       false,
 	}
 }
 
-func (gs *GasStation) BuildStation(pumpType FuelType, nPumps, minTime, maxTime, maxQueue int, wg *sync.WaitGroup) {
+func NewRegister(serveTimeMin, serveTimeMax int, maxQueueLength int) *Station {
+	return &Station{
+		Serve_time_min: serveTimeMin,
+		Serve_time_max: serveTimeMax,
+		Type:           8,
+		WaitQueue:      make(chan Car, maxQueueLength),
+		Occupied:       false,
+	}
+}
+
+func (gs *GasStation) AddPumps(pumpType int, nPumps, minTime, maxTime, maxQueue int) {
 	gs.Pumps[pumpType] = make([]*Station, nPumps)
 	for i := 0; i < nPumps; i++ {
-		gs.Pumps[pumpType][i] = NewStation(minTime, maxTime, pumpType, maxQueue)
-		go gs.Pumps[pumpType][i].fillUpAndLeave()
+		gs.Pumps[pumpType][i] = NewPump(minTime, maxTime, pumpType, maxQueue)
+		go gs.Pumps[pumpType][i].fillUpAndGoPay(gs.Registers)
+	}
+}
+
+func (gs *GasStation) AddRegisters(nRegisters, minTime, maxTime, maxQueue int) {
+	gs.Registers = make([]*Station, nRegisters)
+	for i := 0; i < nRegisters; i++ {
+		gs.Registers[i] = NewRegister(minTime, maxTime, maxQueue)
+		go gs.Registers[i].payAndLeave()
 	}
 }
