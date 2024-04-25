@@ -1,31 +1,31 @@
 cars:
   count: 1000
-  arrival_time_min: 1
-  arrival_time_max: 2
-  main_queue_length_max: 5
+  arrival_time_min: 5
+  arrival_time_max: 10
+  main_queue_length_max: 10
 stations:
   1:
     count: 4
-    serve_time_min: 2
-    serve_time_max: 5
+    serve_time_min: 20
+    serve_time_max: 50
     queue_length_max: 3
   2:
-    count: 2
-    serve_time_min: 3
-    serve_time_max: 6
+    count: 3
+    serve_time_min: 30
+    serve_time_max: 60
     queue_length_max: 3
   3:
     count: 2
-    serve_time_min: 1
-    serve_time_max: 4
+    serve_time_min: 70
+    serve_time_max: 100
     queue_length_max: 3
   4:
-    count: 2
-    serve_time_min: 4
-    serve_time_max: 7
+    count: 1
+    serve_time_min: 10
+    serve_time_max: 40
     queue_length_max: 3
 registers:
   count: 2
-  handle_time_min: 1
-  handle_time_max: 3
+  handle_time_min: 10
+  handle_time_max: 30
   queue_length_max: 1

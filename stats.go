@@ -132,11 +132,12 @@ func printStats() {
 	fmt.Printf("\tAverage Time: %s\n", globalStats.Registers.AverageTime)
 }
 
-// Function for uniform pinting of pump stats
+// Function for uniform printing of pump stats
 func printPumpStats(pumpType string) {
 	pump := globalStats.Pumps.Gas
 	fmt.Printf("%s:\n", pumpType)
 	switch pumpType {
+
 	case "Gas":
 		pump = globalStats.Pumps.Gas
 	case "LPG":
@@ -146,6 +147,7 @@ func printPumpStats(pumpType string) {
 	case "Diesel":
 		pump = globalStats.Pumps.Diesel
 	}
+
 	fmt.Printf("\tCars Served: %d\n", pump.CarsServed)
 	fmt.Printf("\tTotal Service Time: %s\n", pump.TotalServiceTime)
 	fmt.Printf("\tTotal Queue Time: %s\n", pump.TotalQueueTime)
